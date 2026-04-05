@@ -4,8 +4,6 @@ import jwt from 'jsonwebtoken';
 import pool from "@/lib/db";
 
 export async function POST(request: Request) {
-  console.log('🔵 Login request received');
-console.log('Headers:', request.headers.get('content-type'));
   try {
     const { email, password } = await request.json();
 

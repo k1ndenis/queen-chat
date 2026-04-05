@@ -1,16 +1,16 @@
 'use client';
 
 import { fetchWithAuth } from "@/lib/api";
+import {  useAppSelector } from "@/lib/redux/hooks";
 import { ChatInfo } from "@/types/chatInfo";
 import { Message } from "@/types/message";
-import { User } from "@/types/user";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 export default function ChatRoom() {
   const { id } = useParams();
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useAppSelector(state => state.user)
   const [chat, setChat] = useState<ChatInfo | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState<string>("");
@@ -19,14 +19,7 @@ export default function ChatRoom() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    if (!token || !userData) {
-      router.push('/login');
-      return;
-    }
-    try {
-      setUser(JSON.parse(userData));
-    } catch {
+    if (!token) {
       router.push('/login');
     }
   }, [router]);
@@ -58,6 +51,11 @@ export default function ChatRoom() {
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      alert("Пользователь не авторизован");
+      return;
+    }
+
     if (!newMessage.trim()) return;
 
     try {
@@ -93,7 +91,7 @@ export default function ChatRoom() {
     )
   }
 
-  const chatName = chat.name || chat.other_user?.username || "Чвт";
+  const chatName = chat.name || chat.other_user?.username || "Чат";
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
@@ -102,7 +100,7 @@ export default function ChatRoom() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/chat')}
-              className="text-white hover:text-purple-300 transition-colors"
+              className="text-white hover:text-purple-300 transition-colors cursor-pointer"
             >
               ← Назад
             </button>

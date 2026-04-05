@@ -1,10 +1,13 @@
 'use client';
 
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setUser } from "@/lib/redux/slices/userSlice";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function RegisterPage() {
+  const dispatch = useAppDispatch();
   const [email, setEmail] = useState<string>("");
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -21,6 +24,7 @@ export default function RegisterPage() {
     if (response.ok) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      dispatch(setUser(data.user));
       router.push('/chat');
     } else {
       alert(data.error);

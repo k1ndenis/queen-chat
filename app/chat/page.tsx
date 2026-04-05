@@ -1,24 +1,16 @@
 'use client';
 
 import { fetchWithAuth } from "@/lib/api";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { logout, setUser } from "@/lib/redux/slices/userSlice";
 import { Chat } from "@/types/chat";
 import { User } from "@/types/user";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const getInitialUser = (): User | null => {
-  if (typeof window === 'undefined') return null;
-  const userData = localStorage.getItem('user');
-  if (!userData) return null;
-  try {
-    return JSON.parse(userData);
-  } catch {
-    return null;
-  }
-};
-
 export default function ChatPage() {
-  const [user, setUser] = useState<User | null>(getInitialUser);
+  const dispatch = useAppDispatch();
+  const { user, loading: userLoading } = useAppSelector(state => state.user);
   const [chats, setChats] = useState<Chat[]>([]);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -27,21 +19,19 @@ export default function ChatPage() {
 
   const loadChats = async () => {
     try {
-        const response = await fetchWithAuth('/api/chats');
-        const data = await response.json();
-        
-        // Проверяем, что data — это массив
-        if (Array.isArray(data)) {
-            setChats(data);
-        } else {
-            console.error('API вернул не массив:', data);
-            setChats([]);
-        }
-    } catch (error) {
-        console.error('Ошибка загрузки чатов:', error);
+      const response = await fetchWithAuth('/api/chats');
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setChats(data);
+      } else {
+        console.error('API вернул не массив:', data);
         setChats([]);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки чатов:', error);
+      setChats([]);
     }
-};
+  };
 
   const loadUsers = async () => {
     const response = await fetchWithAuth('/api/users');
@@ -69,15 +59,27 @@ export default function ChatPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token || !user) {
+    const userData = localStorage.getItem('user');
+
+    if (!token || !userData) {
       router.push('/login');
+      return;
+    }
+
+    if (!user) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        dispatch(setUser(parsedUser));
+      } catch (error) {
+        console.error(error);
+        router.push('./login');
+      }
     }
     loadChats();
-  }, [user, router]);
+  }, [user, router, dispatch]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    dispatch(logout());
     router.push('/login');
   };
 
